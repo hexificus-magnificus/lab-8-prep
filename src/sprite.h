@@ -8,17 +8,21 @@
 class Sprite {  // could derive from sf::Drawable if you're willing to pay for a vptr, but not
                 // necessary.
 public:
-    Sprite(const sf::Texture& texture) {
-        // TODO
+    Sprite(const sf::Texture& texture)
+        : mTexture(&texture), mMinPointTex({0, 0}), mMaxPointTex(texture.getSize()), mOrigin(texture.getSize()/2u),
+        mVertexArray(sf::PrimitiveType::Triangles, 6) {
     }
 
     Sprite(const sf::Texture& texture, const sf::Vector2f& texMinPoint,
-           const sf::Vector2f& texMaxPoint) {
-        // TODO
+           const sf::Vector2f& texMaxPoint)
+           : mTexture(&texture), mMinPointTex(texMinPoint), mMaxPointTex(texMaxPoint),
+           mOrigin(texMinPoint + texMaxPoint/2.f), mVertexArray(sf::PrimitiveType::Triangles, 6) {
     }
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const {
-        // TODO
+        recomputeVertexArray();
+        states.texture = mTexture;
+        target.draw(mVertexArray, states);
     }
 
     sf::Vector2f& position() { return mTransform.translation; }
@@ -34,12 +38,17 @@ private:
     //     ranging from [0, 1] in both dimensions.
     //   - the next 3 correspond to the vertices of the bottom-right triangle. of the default
     //     rectangle.
-    static constexpr std::array<sf::Vector2f, 6> DEFAULT_VERTICES = {};  // TODO
+    static constexpr std::array<sf::Vector2f, 6> DEFAULT_VERTICES = {{{0.f, 0.f}, {0.f, 1.f}, {1.f, 0.f}, {0.f, 1.f}, {1.f, 1.f}, {1.f, 0.f}}};  // TODO
 
     // if mTexture is valid, recomputes the positions and coords of sf::Vertex for each
     // of 6 possible entries in mVertexArray.
     void recomputeVertexArray() const {
-        // TODO
+        for (int i = 0; i < mVertexArray.getVertexCount(); ++i) {
+            sf::Vector2f size = mMaxPointTex - mMinPointTex;
+            mVertexArray[i].position = (DEFAULT_VERTICES[i] * size - origin()) * scale() + position();
+            mVertexArray[i].texCoords = mMinPointTex + DEFAULT_VERTICES[i] * size;
+            //mVertexArray[i].color = sf::Color::Blue;
+        }
     }
 
     const sf::Texture* mTexture;
